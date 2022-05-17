@@ -1,0 +1,216 @@
+#Purpose of the project:
+# To create a program to search for recipes based on an ingredient, if someone is vegetarian, want max calorie using the Edamam Recipe API.
+# Must haves:
+# 1. Read the Edamam API documentation (done)
+# 2. Ask the user to enter an ingredient that they want to search for
+# 3. Create a function that makes a request to the Edamam API with the required ingredient as
+# part of the search query (also included your Application ID and Application Key
+# 4. Get the returned recipes from the API response
+# 5. Display the recipes for each search result
+# Could haves:
+# Save the results to a file.
+# Ask the user additional questions to decide which recipe they should choose - vegetarian, max. calories.
+
+###################################################################################################
+
+#THE CODE
+
+#The requests module allows you to send HTTP requests using Python. The HTTP request returns a Response Object with all the response data.
+import requests
+#Module allows us to work with json data that comes back from the website when a request is sent.
+import json
+
+#Create a function that makes a request to the Edamam API with the required ingredient as
+#part of the search query (also included your Application ID and Application Key)
+def recipeSearch(ingredient):
+
+    #Signed up to Edamam to get app ID and app Key
+    app_id = '85ef16f7'
+    app_key = '6099c19e6ce12507e227116613453e12'
+
+    # Get the returned recipes from the API response - this code sends a GET request to the specified url - edamam. This data is on JOSN format.
+    result = requests.get(
+        'https://api.edamam.com/search?q={}&app_id={}&app_key={}'.format(ingredient, app_id, app_key)).json()
+
+    # This will return the response when the def recipleSearch Function is called in def runSearch function (below)
+    return result['hits']
+
+#Function to run the recipe search based on ingredient, if vegetarian and if max calories required, then output info below and in json file.
+def runSearch():
+
+    #First stage was asking for user input for how the response needed to be filtered.
+    ingredient = input('What is your ingredient: ')
+
+    # Calling the recipeSearch function with the input for ingredient
+    results = recipeSearch(ingredient)
+
+    # Asking user if they are vegetarian.
+    youVeg = input('Are you vegetarian (y/n): ')
+
+    # Asking user if they would like a maximum calories for their recipe. The
+    likeMaxCal = input('Would you like to have a maximum calories for your recipe? (y/n): ')
+    print()
+
+    # Used if/elif statements and for loops to differentiate selected options from user from response from API in order to be able to output the right list of recipes.
+    # PROBLEM: We found it quite hard to filter the response from the API by e.g. vegitarian options, max calories. Tried using params.
+    # PROBLEM: Code is long. Likely easier and shorter way to do this but would need more time to figure it out.
+
+    if youVeg == 'y' and likeMaxCal == 'y':
+
+        #Included some 'witty' text for the user as they use the program.
+        print("When you're vegetarian and watching those calories....")
+        print()
+
+        #Asking user for input of what there max number of calories, if requested. Int value.
+        maxCal = int(input('What is your max number of calories: '))
+        print()
+        print('Recipes for vegetarians with your calorie limit found below: ')
+        print()
+
+        # Write file of output - this code is integrated within each part of if/elif statements to do output.
+        # PROBLEM: ensuring the output into the JSON file was only what the user sees below.
+        # PROBLEM: Long code. likely way for this code to be put in a function rather than repeated in each part of if/elif statement.
+
+        with open('recipes_data.json', 'w') as json_file:
+            for result in results:
+                recipe = result['recipe']
+
+                # Ensuring only recipes with 'Vegetarian’ in healthLabel show.
+                if 'Vegetarian' in recipe['healthLabels']:
+
+                    # Ensuring only recipes below a max calories show.
+                    if recipe['calories'] <= maxCal:
+
+                        print(recipe['label'])
+                        print('Recipes for these diet requirements: {}'.format(recipe['healthLabels']))
+                        print('You can find this recipe here: {}'.format(recipe['url']))
+                        print('This recipe has {} calories.'.format(int(recipe['calories'])))
+                        print()
+                        (json.dump(recipe['label'], json_file))
+                        json_file.write("\n")
+                        json_file.write("URL:")
+                        (json.dump(recipe['url'], json_file))
+                        json_file.write("\n")
+                        json_file.write("Image:")
+                        (json.dump(recipe['image'], json_file))
+                        json_file.write("\n")
+                        json_file.write("Number of calories:")
+                        (json.dump(int(recipe['calories']), json_file))
+                        json_file.write("\n")
+
+                        #Function called to add to output in file if recipe is or not suitbale for vegetarians.
+                        if suitable_for_vegetarians(recipe):
+                            json_file.write("Suitable for vegetarians.")
+                        else:
+                            json_file.write("Not suitable for vegetarians.")
+                        json_file.write("\n")
+                        json_file.write("\n")
+
+    elif youVeg == 'y' and likeMaxCal == 'n':
+        print("When you're vegetarian and you want something bad....")
+        print()
+        print('Recipes for vegetarians with NO calorie limit found below: ')
+        print()
+        with open('recipes_data.json', 'w') as json_file:
+            for result in results:
+                recipe = result['recipe']
+                if 'Vegetarian' in recipe['healthLabels']:
+                    print(recipe['label'])
+                    print('Recipes for these diet requirements: {}'.format(recipe['healthLabels']))
+                    print('You can find this recipe here: {}'.format(recipe['url']))
+                    print('This recipe has {} calories.'.format(int(recipe['calories'])))
+                    print()
+                    (json.dump(recipe['label'], json_file))
+                    json_file.write("\n")
+                    json_file.write("URL:")
+                    (json.dump(recipe['url'], json_file))
+                    json_file.write("\n")
+                    json_file.write("Image:")
+                    (json.dump(recipe['image'], json_file))
+                    json_file.write("\n")
+                    json_file.write("Number of calories:")
+                    (json.dump(int(recipe['calories']), json_file))
+                    json_file.write("\n")
+                    if suitable_for_vegetarians(recipe):
+                        json_file.write("Suitable for vegetarians.")
+                    else:
+                        json_file.write("Not suitable for vegetarians.")
+                    json_file.write("\n")
+                    json_file.write("\n")
+
+    elif youVeg == 'n' and likeMaxCal == 'y':
+        print("When you're trying to be good....")
+        print()
+        maxCal = int(input('What is your max number of calories: '))
+        print()
+        print('Recipes with your calorie limit found below: ')
+        print()
+        with open('recipes_data.json', 'w') as json_file:
+            for result in results:
+                recipe = result['recipe']
+                if recipe['calories'] <= maxCal:
+                    print(recipe['label'])
+                    print('Recipes for these diet requirements: {}'.format(recipe['healthLabels']))
+                    print('You can find this recipe here: {}'.format(recipe['url']))
+                    print('This recipe has {} calories.'.format(int(recipe['calories'])))
+                    print()
+                    (json.dump(recipe['label'], json_file))
+                    json_file.write("\n")
+                    json_file.write("URL:")
+                    (json.dump(recipe['url'], json_file))
+                    json_file.write("\n")
+                    json_file.write("Image:")
+                    (json.dump(recipe['image'], json_file))
+                    json_file.write("\n")
+                    json_file.write("Number of calories:")
+                    (json.dump(int(recipe['calories']), json_file))
+                    json_file.write("\n")
+                    if suitable_for_vegetarians(recipe):
+                        json_file.write("Suitable for vegetarians.")
+                    else:
+                        json_file.write("Not suitable for vegetarians.")
+                    json_file.write("\n")
+                    json_file.write("\n")
+
+    elif youVeg == 'n' and likeMaxCal == 'n':
+        print("When you just don't care....")
+        print()
+        print('Recipes with NO calorie limit found below: ')
+        print()
+        with open('recipes_data.json', 'w') as json_file:
+            for result in results:
+                recipe = result['recipe']
+                print()
+                print(recipe['label'])
+                print('Recipes for these diet requirements: {}'.format(recipe['healthLabels']))
+                print('You can find this recipe here: {}'.format(recipe['url']))
+                print('This recipe has {} calories.'.format(int(recipe['calories'])))
+                print()
+                (json.dump(recipe['label'], json_file))
+                json_file.write("\n")
+                json_file.write("URL:")
+                (json.dump(recipe['url'], json_file))
+                json_file.write("\n")
+                json_file.write("Image:")
+                (json.dump(recipe['image'], json_file))
+                json_file.write("\n")
+                json_file.write("Number of calories:")
+                (json.dump(int(recipe['calories']), json_file))
+                json_file.write("\n")
+                if suitable_for_vegetarians(recipe):
+                    json_file.write("Suitable for vegetarians.")
+                else:
+                    json_file.write("Not suitable for vegetarians.")
+                json_file.write("\n")
+                json_file.write("\n")
+
+    else:
+        print('Incorrect input! - should be y or n.')
+
+#This function is used when a file is created and will indicate if the recipe is ok for vegetarians or not.
+
+def suitable_for_vegetarians(recipe):
+    return 'Vegetarian' in recipe['healthLabels']
+
+#This runs the main runSearch function that all other defined functions will be called.
+runSearch()
